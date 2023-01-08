@@ -9,6 +9,7 @@ from launch_ros.substitutions import FindPackagePrefix
 from machinekit.hal.cyruntime import rtapi
 import machinekit.hal.cyhal as hal
 from .hal_ordered_action import HalOrderedNode, HalThreadedReadyAction
+from machinekit.hal.cyruntime import rtapi as rtapi
 
 
 class HalRTNode(HalOrderedNode, HalThreadedReadyAction):
