@@ -82,6 +82,10 @@ add_library(
   src/hal_system_interface.cpp
 )
 
+#set(ros2dist_include_path "/opt/ros/humble/include")
+#message(ros2dist_include_path="${ros2dist_include_path}")
+
+
 # Header files
 # - Specify additional header locations
 target_include_directories(
@@ -89,6 +93,7 @@ target_include_directories(
   PRIVATE
   include/
   ${HAL_INCLUDE_PATH}
+#  ${ros2dist_include_path}
 )
 
 target_compile_definitions(
@@ -105,6 +110,7 @@ ament_target_dependencies(
   rclcpp
   # rclcpp_lifecycle
   HAL
+  hardware_interface
 )
 
 pluginlib_export_plugin_description_file(

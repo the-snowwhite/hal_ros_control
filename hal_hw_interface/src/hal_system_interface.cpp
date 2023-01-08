@@ -108,12 +108,14 @@ void HalSystemInterface::init_state_interface(const std::string joint_name,
                                  .handle_storage = 0.0 };
 }
 
-hardware_interface::return_type
-HalSystemInterface::configure(const hardware_interface::HardwareInfo& info)
+hardware_interface::CallbackReturn
+HalSystemInterface::on_init(const hardware_interface::HardwareInfo& info)
 {
-  if (configure_default(info) != hardware_interface::return_type::OK)
+  if (
+    hardware_interface::SystemInterface::on_init(info) !=
+    hardware_interface::CallbackReturn::SUCCESS)
   {
-    return hardware_interface::return_type::ERROR;
+    return hardware_interface::CallbackReturn::ERROR;
   }
 
   HAL_ROS_INFO_NAMED(LOG_NAME, "Initializing HAL hardware interface");
@@ -149,7 +151,7 @@ HalSystemInterface::configure(const hardware_interface::HardwareInfo& info)
 
   HAL_ROS_INFO_NAMED(LOG_NAME, "Initialized HAL pins");
 
-  return hardware_interface::return_type::OK;
+  return hardware_interface::CallbackReturn::SUCCESS;
 }  // configure()
 
 std::vector<hardware_interface::StateInterface>
@@ -174,7 +176,8 @@ HalSystemInterface::export_command_interfaces()
   return interfaces;
 }
 
-hardware_interface::return_type HalSystemInterface::read()
+hardware_interface::return_type HalSystemInterface::read(
+    const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   for (auto& [name, intf_data] : state_intf_data_map_)
     // Copy to handle from HAL pin
@@ -182,7 +185,8 @@ hardware_interface::return_type HalSystemInterface::read()
   return hardware_interface::return_type::OK;
 }
 
-hardware_interface::return_type HalSystemInterface::write()
+hardware_interface::return_type HalSystemInterface::write(
+  const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   for (auto& [name, intf_data] : command_intf_data_map_)
     // Copy to HAL pin from handle
@@ -190,17 +194,81 @@ hardware_interface::return_type HalSystemInterface::write()
   return hardware_interface::return_type::OK;
 }
 
-hardware_interface::return_type HalSystemInterface::start()
+hardware_interface::return_type HalSystemInterface::prepare_command_mode_switch(
+  const std::vector<std::string> & /*start_interfaces*/,
+  const std::vector<std::string> & stop_interfaces)
 {
-  HAL_ROS_INFO_NAMED(LOG_NAME, "Starting HAL system interface");
+  // Prepare for new command modes
+  std::vector<integration_level_t> new_modes = {};
+//  for (std::string key : start_interfaces)
+//  {
+//    for (std::size_t i = 0; i < info_.joints.size(); i++)
+//    {
+//      if (key == info_.joints[i].name + "/" + hardware_interface::HW_IF_POSITION)
+//      {
+//        new_modes.push_back(integration_level_t::POSITION);
+//      }
+//      if (key == info_.joints[i].name + "/" + hardware_interface::HW_IF_VELOCITY)
+//      {
+//        new_modes.push_back(integration_level_t::VELOCITY);
+//      }
+//      if (key == info_.joints[i].name + "/" + hardware_interface::HW_IF_ACCELERATION)
+//      {
+//        new_modes.push_back(integration_level_t::ACCELERATION);
+//      }
+//    }
+//  }
+  // Example criteria: All joints must be given new command mode at the same time
+  if (new_modes.size() != info_.joints.size())
+  {
+    return hardware_interface::return_type::ERROR;
+  }
+  // Example criteria: All joints must have the same command mode
+  if (!std::all_of(new_modes.begin() + 1, new_modes.end(), [&](integration_level_t mode) {
+        return mode == new_modes[0];
+      }))
+  {
+    return hardware_interface::return_type::ERROR;
+  }
+
+  // Stop motion on all relevant joints that are stopping
+  for (std::string key : stop_interfaces)
+  {
+    for (std::size_t i = 0; i < info_.joints.size(); i++)
+    {
+      if (key.find(info_.joints[i].name) != std::string::npos)
+      {
+//        hw_commands_velocities_[i] = 0;
+//        hw_commands_accelerations_[i] = 0;
+//        control_level_[i] = integration_level_t::UNDEFINED;  // Revert to undefined
+      }
+    }
+  }
+  // Set the new command modes
+  for (std::size_t i = 0; i < info_.joints.size(); i++)
+  {
+    if (control_level_[i] != integration_level_t::UNDEFINED)
+    {
+      // Something else is using the joint! Abort!
+      return hardware_interface::return_type::ERROR;
+    }
+    control_level_[i] = new_modes[i];
+  }
   return hardware_interface::return_type::OK;
 }
 
-hardware_interface::return_type HalSystemInterface::stop()
-{
-  HAL_ROS_INFO_NAMED(LOG_NAME, "Stopping HAL system interface");
-  return hardware_interface::return_type::OK;
-}
+
+//hardware_interface::return_type HalSystemInterface::start()
+//{
+//  HAL_ROS_INFO_NAMED(LOG_NAME, "Starting HAL system interface");
+//  return hardware_interface::return_type::OK;
+//}
+
+//hardware_interface::return_type HalSystemInterface::stop()
+//{
+//  HAL_ROS_INFO_NAMED(LOG_NAME, "Stopping HAL system interface");
+//  return hardware_interface::return_type::OK;
+//}
 
 }  // namespace hal_system_interface
 

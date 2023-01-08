@@ -90,7 +90,7 @@ void reset_controller_cb(void)
   **RESET_PIN_PTR = 0;  // clear reset pin
   std::vector<std::string> start_controllers, stop_controllers;
   for (const auto& controller : CONTROLLER_MANAGER->get_loaded_controllers())
-    if (controller.c->get_current_state().id() ==
+    if (controller.c->get_state().id() ==
         lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
     {
       HAL_ROS_INFO_NAMED(CNAME, "  - %s", controller.info.name.c_str());
@@ -133,7 +133,7 @@ int rtapi_app_main(void)
 
   // Init ROS node, delegating signal handling to rtapi_app
   auto init_opts = rclcpp::InitOptions();
-  init_opts.shutdown_on_sigint = false;
+  init_opts.shutdown_on_signal = false;
   int argc;
   for (argc = 0; ARGV[argc] != nullptr; argc++)
   {
@@ -227,18 +227,21 @@ void funct([[maybe_unused]] void* arg, [[maybe_unused]] int64_t period)
   **CM_OK_PIN_PTR = CM_OK;
   if (!CM_OK)
     return;
-  CONTROLLER_MANAGER->read();
+//  CONTROLLER_MANAGER->read(const rclcpp::Time & time, const rclcpp::Duration & period);
+  CONTROLLER_MANAGER->read(rclcpp::Time(0), rclcpp::Duration::from_seconds(0.01));
   tend = rtapi_get_time();
   **TMAX_READ_PIN_PTR =
       **TMAX_READ_PIN_PTR > tend - tstart ? **TMAX_READ_PIN_PTR : tend - tstart;
   tstart = tend;
-  CONTROLLER_MANAGER->update();
+//  CONTROLLER_MANAGER->update(const rclcpp::Time & time, const rclcpp::Duration & period);
+  CONTROLLER_MANAGER->update(rclcpp::Time(0), rclcpp::Duration::from_seconds(0.01));
   tend = rtapi_get_time();
   **TMAX_UPDATE_PIN_PTR = **TMAX_UPDATE_PIN_PTR > tend - tstart ?
                               **TMAX_UPDATE_PIN_PTR :
                               tend - tstart;
   tstart = tend;
-  CONTROLLER_MANAGER->write();
+//  CONTROLLER_MANAGER->write(const rclcpp::Time & time, const rclcpp::Duration & period);
+  CONTROLLER_MANAGER->write(rclcpp::Time(0), rclcpp::Duration::from_seconds(0.01));
   tend = rtapi_get_time();
   **TMAX_WRITE_PIN_PTR = **TMAX_WRITE_PIN_PTR > tend - tstart ?
                              **TMAX_WRITE_PIN_PTR :

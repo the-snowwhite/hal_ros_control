@@ -45,7 +45,7 @@
 #include <unordered_map>
 
 #include "hardware_interface/handle.hpp"
-#include "hardware_interface/base_interface.hpp"
+#include "hardware_interface/hardware_info.hpp"
 #include "hardware_interface/system_interface.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
@@ -100,16 +100,15 @@ namespace hal_system_interface
  * [1]: https://github.com/PickNikRobotics/ros_control_boilerplate
  */
 
-class HalSystemInterface : public hardware_interface::BaseInterface<
-                               hardware_interface::SystemInterface>
+class HalSystemInterface : public hardware_interface::SystemInterface
 {
 public:
   // Define aliases and static functions for using the Class with shared_ptrs
   RCLCPP_SHARED_PTR_DEFINITIONS(HalSystemInterface);
 
   HAL_HW_INTERFACE_PUBLIC
-  hardware_interface::return_type
-  configure(const hardware_interface::HardwareInfo& info) override;
+  hardware_interface::CallbackReturn on_init(
+  const hardware_interface::HardwareInfo & info) override;
 
   HAL_HW_INTERFACE_PUBLIC
   std::vector<hardware_interface::StateInterface>
@@ -119,29 +118,36 @@ public:
   std::vector<hardware_interface::CommandInterface>
   export_command_interfaces() override;
 
-  // HAL_HW_INTERFACE_PUBLIC
-  // hardware_interface::return_type prepare_command_mode_switch(
-  //   const std::vector<std::string> & /*start_interfaces*/,
-  //   const std::vector<std::string> & /*stop_interfaces*/) override;
+  HAL_HW_INTERFACE_PUBLIC
+  hardware_interface::return_type prepare_command_mode_switch(
+    const std::vector<std::string> & start_interfaces,
+    const std::vector<std::string> & stop_interfaces) override;
 
   // HAL_HW_INTERFACE_PUBLIC
   // hardware_interface::return_type perform_command_mode_switch(
   //   const std::vector<std::string> & /*start_interfaces*/,
   //   const std::vector<std::string> & /*stop_interfaces*/) override;
 
-  HAL_HW_INTERFACE_PUBLIC
-  hardware_interface::return_type start() override;
+//  HAL_HW_INTERFACE_PUBLIC
+//  hardware_interface::return_type start() override;
+
+//  HAL_HW_INTERFACE_PUBLIC
+//  hardware_interface::return_type stop() override;
 
   HAL_HW_INTERFACE_PUBLIC
-  hardware_interface::return_type stop() override;
+  hardware_interface::return_type read(
+    const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
   HAL_HW_INTERFACE_PUBLIC
-  hardware_interface::return_type read() override;
-
-  HAL_HW_INTERFACE_PUBLIC
-  hardware_interface::return_type write() override;
+  hardware_interface::return_type write(
+    const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 protected:
+  // Parameters for the RRBot simulation
+  double hw_start_sec_;
+  double hw_stop_sec_;
+  double hw_slowdown_;
+
   hal_float_t** alloc_and_init_hal_pin(const std::string /*joint_name*/,
                                        const std::string /*interface_name*/,
                                        const std::string /*suffix*/,
@@ -161,6 +167,19 @@ protected:
   // Interface data
   std::unordered_map<std::string, intf_data_t> command_intf_data_map_;
   std::unordered_map<std::string, intf_data_t> state_intf_data_map_;
+
+  // Enum defining at which control level we are
+  // Dumb way of maintaining the command_interface type per joint.
+  enum integration_level_t : std::uint8_t
+  {
+    UNDEFINED = 0,
+    POSITION = 1,
+    VELOCITY = 2,
+    ACCELERATION = 3
+  };
+
+  // Active control mode for each actuator
+  std::vector<integration_level_t> control_level_;
 };  // HalSystemInterface
 
 }  // namespace hal_system_interface
