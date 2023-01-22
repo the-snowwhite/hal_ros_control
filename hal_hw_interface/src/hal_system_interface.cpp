@@ -38,6 +38,7 @@
 
 #include <hal_hw_interface/hal_system_interface.hpp>
 #include <hal_hw_interface/hal_ros_logging.hpp>
+#include "hardware_interface/types/hardware_interface_type_values.hpp"
 
 #include <string>
 #include <vector>
@@ -108,13 +109,14 @@ void HalSystemInterface::init_state_interface(const std::string joint_name,
                                  .handle_storage = 0.0 };
 }
 
-hardware_interface::CallbackReturn
-HalSystemInterface::on_init(const hardware_interface::HardwareInfo& info)
+hardware_interface::CallbackReturn HalSystemInterface::on_init(
+  const hardware_interface::HardwareInfo& info)
 {
   if (
     hardware_interface::SystemInterface::on_init(info) !=
     hardware_interface::CallbackReturn::SUCCESS)
   {
+    HAL_ROS_INFO_NAMED(LOG_NAME, "ERROR initializing HAL hardware interface");
     return hardware_interface::CallbackReturn::ERROR;
   }
 
@@ -195,16 +197,17 @@ hardware_interface::return_type HalSystemInterface::write(
 }
 
 hardware_interface::return_type HalSystemInterface::prepare_command_mode_switch(
-  const std::vector<std::string> & /*start_interfaces*/,
+  const std::vector<std::string> & start_interfaces,
   const std::vector<std::string> & stop_interfaces)
 {
   // Prepare for new command modes
   std::vector<integration_level_t> new_modes = {};
-//  for (std::string key : start_interfaces)
-//  {
+  for (std::string key : start_interfaces)
+  {
+    return hardware_interface::return_type::OK;
 //    for (std::size_t i = 0; i < info_.joints.size(); i++)
 //    {
-//      if (key == info_.joints[i].name + "/" + hardware_interface::HW_IF_POSITION)
+//     if (key == info_.joints[i].name + "/" + hardware_interface::HW_IF_POSITION)
 //      {
 //        new_modes.push_back(integration_level_t::POSITION);
 //      }
@@ -217,42 +220,31 @@ hardware_interface::return_type HalSystemInterface::prepare_command_mode_switch(
 //        new_modes.push_back(integration_level_t::ACCELERATION);
 //      }
 //    }
-//  }
-  // Example criteria: All joints must be given new command mode at the same time
-  if (new_modes.size() != info_.joints.size())
-  {
-    return hardware_interface::return_type::ERROR;
-  }
-  // Example criteria: All joints must have the same command mode
-  if (!std::all_of(new_modes.begin() + 1, new_modes.end(), [&](integration_level_t mode) {
-        return mode == new_modes[0];
-      }))
-  {
-    return hardware_interface::return_type::ERROR;
   }
 
   // Stop motion on all relevant joints that are stopping
   for (std::string key : stop_interfaces)
   {
-    for (std::size_t i = 0; i < info_.joints.size(); i++)
-    {
-      if (key.find(info_.joints[i].name) != std::string::npos)
-      {
+    return hardware_interface::return_type::OK;
+//    for (std::size_t i = 0; i < info_.joints.size(); i++)
+//    {
+//      if (key.find(info_.joints[i].name) != std::string::npos)
+//      {
 //        hw_commands_velocities_[i] = 0;
 //        hw_commands_accelerations_[i] = 0;
 //        control_level_[i] = integration_level_t::UNDEFINED;  // Revert to undefined
-      }
-    }
-  }
+//      }
+//    }
+//  }
   // Set the new command modes
-  for (std::size_t i = 0; i < info_.joints.size(); i++)
-  {
-    if (control_level_[i] != integration_level_t::UNDEFINED)
-    {
+//  for (std::size_t i = 0; i < info_.joints.size(); i++)
+//  {
+//    if (control_level_[i] != integration_level_t::UNDEFINED)
+//    {
       // Something else is using the joint! Abort!
-      return hardware_interface::return_type::ERROR;
-    }
-    control_level_[i] = new_modes[i];
+//      return hardware_interface::return_type::ERROR;
+//    }
+//    control_level_[i] = new_modes[i];
   }
   return hardware_interface::return_type::OK;
 }

@@ -109,6 +109,7 @@ void reset_controller_cb(void)
 
 int rtapi_app_main(void)
 {
+  HAL_ROS_INFO_NAMED(CNAME, "Will now initialize HAL component: '%s'", CNAME);
   // Init HAL component
   COMP_ID = hal_init(CNAME);
   if (COMP_ID < 0)

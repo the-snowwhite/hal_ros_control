@@ -159,6 +159,9 @@ protected:
                             const std::string /*interface_name*/,
                             const std::string /*data_type*/);
 
+  std::vector<double> hw_commands_velocities_;
+  std::vector<double> hw_commands_accelerations_;
+
   /**
    * \brief HAL component ID
    */
