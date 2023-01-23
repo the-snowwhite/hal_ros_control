@@ -178,48 +178,45 @@ def generate_launch_description():
         )
     )
 
+    description_package = LaunchConfiguration("description_package")
+    description_file = LaunchConfiguration("description_file")
+    prefix = LaunchConfiguration("prefix")
+
     # Get URDF via xacro
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             PathJoinSubstitution(
-                [
-                    FindPackageShare(
-                        LaunchConfiguration("description_package")
-                    ),
-                    "urdf",
-                    LaunchConfiguration("description_file"),
-                ]
+                [FindPackageShare(description_package), "urdf", description_file]
             ),
             " ",
             "prefix:=",
-            LaunchConfiguration("prefix"),
-            " ",
-            "use_gazebo:=",
-            LaunchConfiguration("use_gazebo"),
-            " ",
-            "use_sim:=",
-            LaunchConfiguration("use_sim"),
-            " ",
-            "use_fake_hardware:=",
-            LaunchConfiguration("use_fake_hardware"),
-            " ",
-            "with_sensor:=",
-            LaunchConfiguration("with_sensor"),
-            " ",
-            "position_only:=",
-            LaunchConfiguration("position_only"),
-            " ",
-            "fake_sensor_commands:=",
-            LaunchConfiguration("fake_sensor_commands"),
-            " ",
-            "slowdown:=",
-            LaunchConfiguration("slowdown"),
-            " ",
-            "hardware_plugin:=",
-            LaunchConfiguration("hardware_plugin"),
+            prefix,
         ]
+    )
+    robot_description = {"robot_description": robot_description_content}
+
+    rviz_config_file = PathJoinSubstitution(
+        [FindPackageShare(description_package), "config", "rrbot.rviz"]
+    )
+
+    joint_state_publisher_node = Node(
+        package="joint_state_publisher_gui",
+        executable="joint_state_publisher_gui",
+    )
+    robot_state_publisher_node = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        output="both",
+        parameters=[robot_description],
+    )
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+        arguments=["-d", rviz_config_file],
     )
 
     # HAL configuration
@@ -263,6 +260,16 @@ def generate_launch_description():
         ],
     )
 
+    robot_description = {"robot_description": robot_description_content}
+
+    robot_controllers = PathJoinSubstitution(
+        [
+            FindPackageShare("ros2_control_demo_bringup"),
+            "config",
+            "rrbot_controllers.yaml",
+        ]
+    )
+
     rviz_config_file = PathJoinSubstitution(
         [
             FindPackageShare(LaunchConfiguration("description_package")),
@@ -271,19 +278,17 @@ def generate_launch_description():
         ]
     )
 
-    robot_state_pub_node = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
+    control_node = Node(
+        package="controller_manager",
+        executable="ros2_control_node",
+        parameters=[robot_description, robot_controllers],
+        remappings=[
+            (
+                "/forward_position_controller/commands",
+                "/position_commands",
+            ),
+        ],
         output="both",
-        parameters=[dict(robot_description=robot_description_content)],
-    )
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_config_file],
-        condition=IfCondition(LaunchConfiguration("start_rviz")),
     )
 
     joint_state_broadcaster_spawner = Node(
@@ -324,7 +329,8 @@ def generate_launch_description():
 
     nodes = [
         hal_hw_interface_launch,
-        robot_state_pub_node,
+        joint_state_publisher_node,
+        robot_state_publisher_node,
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
