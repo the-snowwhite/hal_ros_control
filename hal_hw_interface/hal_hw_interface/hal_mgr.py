@@ -36,7 +36,7 @@ class HalMgr(RosHalComponent):
         :py:func:`stop_realtime` shutdown callback.
         """
         # Set up console debug output and config
-        d_out = "1" if self.get_ros_param("hal_debug_output", 1) else "0"
+        d_out = "1" if self.get_ros_param("hal_debug_output", True) else "0"
         d_lev = str(self.get_ros_param("hal_debug_level", 1))
         # - Use UDP discovery; rtapi_app runs as root, which breaks
         #   shm-based discovery
