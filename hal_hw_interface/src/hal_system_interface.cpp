@@ -116,7 +116,6 @@ hardware_interface::CallbackReturn HalSystemInterface::on_init(
     hardware_interface::SystemInterface::on_init(info) !=
     hardware_interface::CallbackReturn::SUCCESS)
   {
-    HAL_ROS_INFO_NAMED(LOG_NAME, "ERROR initializing HAL hardware interface");
     return hardware_interface::CallbackReturn::ERROR;
   }
 
@@ -155,6 +154,22 @@ hardware_interface::CallbackReturn HalSystemInterface::on_init(
 
   return hardware_interface::CallbackReturn::SUCCESS;
 }  // configure()
+
+hardware_interface::CallbackReturn HalSystemInterface::on_configure(
+  const rclcpp_lifecycle::State & /*previous_state*/)
+{
+
+  // reset values always when configuring hardware
+  for (uint i = 0; i < hw_states_.size(); i++)
+  {
+    hw_states_[i] = 0;
+    hw_commands_[i] = 0;
+  }
+
+  HAL_ROS_INFO_NAMED(LOG_NAME, "HalSystemInterface Successfully configured!");
+
+  return hardware_interface::CallbackReturn::SUCCESS;
+}
 
 std::vector<hardware_interface::StateInterface>
 HalSystemInterface::export_state_interfaces()
@@ -196,71 +211,19 @@ hardware_interface::return_type HalSystemInterface::write(
   return hardware_interface::return_type::OK;
 }
 
-hardware_interface::return_type HalSystemInterface::prepare_command_mode_switch(
-  const std::vector<std::string> & start_interfaces,
-  const std::vector<std::string> & stop_interfaces)
+hardware_interface::CallbackReturn HalSystemInterface::on_activate(
+  const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  // Prepare for new command modes
-  std::vector<integration_level_t> new_modes = {};
-  for (std::string key : start_interfaces)
-  {
-    return hardware_interface::return_type::OK;
-//    for (std::size_t i = 0; i < info_.joints.size(); i++)
-//    {
-//     if (key == info_.joints[i].name + "/" + hardware_interface::HW_IF_POSITION)
-//      {
-//        new_modes.push_back(integration_level_t::POSITION);
-//      }
-//      if (key == info_.joints[i].name + "/" + hardware_interface::HW_IF_VELOCITY)
-//      {
-//        new_modes.push_back(integration_level_t::VELOCITY);
-//      }
-//      if (key == info_.joints[i].name + "/" + hardware_interface::HW_IF_ACCELERATION)
-//      {
-//        new_modes.push_back(integration_level_t::ACCELERATION);
-//      }
-//    }
-  }
-
-  // Stop motion on all relevant joints that are stopping
-  for (std::string key : stop_interfaces)
-  {
-    return hardware_interface::return_type::OK;
-//    for (std::size_t i = 0; i < info_.joints.size(); i++)
-//    {
-//      if (key.find(info_.joints[i].name) != std::string::npos)
-//      {
-//        hw_commands_velocities_[i] = 0;
-//        hw_commands_accelerations_[i] = 0;
-//        control_level_[i] = integration_level_t::UNDEFINED;  // Revert to undefined
-//      }
-//    }
-//  }
-  // Set the new command modes
-//  for (std::size_t i = 0; i < info_.joints.size(); i++)
-//  {
-//    if (control_level_[i] != integration_level_t::UNDEFINED)
-//    {
-      // Something else is using the joint! Abort!
-//      return hardware_interface::return_type::ERROR;
-//    }
-//    control_level_[i] = new_modes[i];
-  }
-  return hardware_interface::return_type::OK;
+  HAL_ROS_INFO_NAMED(LOG_NAME, "Starting HAL system interface");
+  return hardware_interface::CallbackReturn::SUCCESS;
 }
 
-
-//hardware_interface::return_type HalSystemInterface::start()
-//{
-//  HAL_ROS_INFO_NAMED(LOG_NAME, "Starting HAL system interface");
-//  return hardware_interface::return_type::OK;
-//}
-
-//hardware_interface::return_type HalSystemInterface::stop()
-//{
-//  HAL_ROS_INFO_NAMED(LOG_NAME, "Stopping HAL system interface");
-//  return hardware_interface::return_type::OK;
-//}
+hardware_interface::CallbackReturn HalSystemInterface::on_deactivate(
+  const rclcpp_lifecycle::State & /*previous_state*/)
+{
+  HAL_ROS_INFO_NAMED(LOG_NAME, "Stopping HAL system interface");
+  return hardware_interface::CallbackReturn::SUCCESS;
+}
 
 }  // namespace hal_system_interface
 

@@ -50,6 +50,8 @@
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "rclcpp/macros.hpp"
+#include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
+#include "rclcpp_lifecycle/state.hpp"
 #include "hal_hw_interface/visibility_control.h"
 
 #define LOG_NAME (CNAME "_system_interface")
@@ -111,6 +113,10 @@ public:
   const hardware_interface::HardwareInfo & info) override;
 
   HAL_HW_INTERFACE_PUBLIC
+  hardware_interface::CallbackReturn on_configure(
+    const rclcpp_lifecycle::State & previous_state) override;
+
+  HAL_HW_INTERFACE_PUBLIC
   std::vector<hardware_interface::StateInterface>
   export_state_interfaces() override;
 
@@ -119,20 +125,12 @@ public:
   export_command_interfaces() override;
 
   HAL_HW_INTERFACE_PUBLIC
-  hardware_interface::return_type prepare_command_mode_switch(
-    const std::vector<std::string> & start_interfaces,
-    const std::vector<std::string> & stop_interfaces) override;
+  hardware_interface::CallbackReturn on_activate(
+    const rclcpp_lifecycle::State & previous_state) override;
 
-  // HAL_HW_INTERFACE_PUBLIC
-  // hardware_interface::return_type perform_command_mode_switch(
-  //   const std::vector<std::string> & /*start_interfaces*/,
-  //   const std::vector<std::string> & /*stop_interfaces*/) override;
-
-//  HAL_HW_INTERFACE_PUBLIC
-//  hardware_interface::return_type start() override;
-
-//  HAL_HW_INTERFACE_PUBLIC
-//  hardware_interface::return_type stop() override;
+  HAL_HW_INTERFACE_PUBLIC
+  hardware_interface::CallbackReturn on_deactivate(
+    const rclcpp_lifecycle::State & previous_state) override;
 
   HAL_HW_INTERFACE_PUBLIC
   hardware_interface::return_type read(
@@ -143,11 +141,6 @@ public:
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 protected:
-  // Parameters for the RRBot simulation
-  double hw_start_sec_;
-  double hw_stop_sec_;
-  double hw_slowdown_;
-
   hal_float_t** alloc_and_init_hal_pin(const std::string /*joint_name*/,
                                        const std::string /*interface_name*/,
                                        const std::string /*suffix*/,
@@ -159,9 +152,6 @@ protected:
                             const std::string /*interface_name*/,
                             const std::string /*data_type*/);
 
-  std::vector<double> hw_commands_velocities_;
-  std::vector<double> hw_commands_accelerations_;
-
   /**
    * \brief HAL component ID
    */
@@ -171,18 +161,15 @@ protected:
   std::unordered_map<std::string, intf_data_t> command_intf_data_map_;
   std::unordered_map<std::string, intf_data_t> state_intf_data_map_;
 
-  // Enum defining at which control level we are
-  // Dumb way of maintaining the command_interface type per joint.
-  enum integration_level_t : std::uint8_t
-  {
-    UNDEFINED = 0,
-    POSITION = 1,
-    VELOCITY = 2,
-    ACCELERATION = 3
-  };
+  // Parameters for the RRBot simulation
+  double hw_start_sec_;
+  double hw_stop_sec_;
+  double hw_slowdown_;
 
-  // Active control mode for each actuator
-  std::vector<integration_level_t> control_level_;
+  // Store the command for the simulated robot
+  std::vector<double> hw_commands_;
+  std::vector<double> hw_states_;
+
 };  // HalSystemInterface
 
 }  // namespace hal_system_interface
