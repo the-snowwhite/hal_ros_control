@@ -59,7 +59,7 @@ int COMP_ID = -1;
 
 extern "C" {
 // Pre-declare the HAL function
-void funct(void* arg, int64_t period);
+void funct(void* arg, long period);
 
 #define MAX_ARGS 255
 static char* ARGV[MAX_ARGS] = {
@@ -218,7 +218,7 @@ int rtapi_app_main(void)
   return 0;  // Success
 }
 
-void funct([[maybe_unused]] void* arg, [[maybe_unused]] int64_t period)
+void funct([[maybe_unused]] void* arg, [[maybe_unused]] long period)
 {
   int64_t tstart, tend;
   tstart = rtapi_get_time();

@@ -101,6 +101,7 @@ target_compile_definitions(
 
 ament_target_dependencies(
   hal_system_interface
+  hardware_interface
   pluginlib
   rclcpp
   # rclcpp_lifecycle
